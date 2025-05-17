@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Форма добавления учеников</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      background: #eef;
+    }
+    label, input, select, textarea {
+      display: block;
+      margin: 10px 0;
+      font-size: 16px;
+    }
+    table {
+      margin-top: 30px;
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+    }
+    th, td {
+      border: 1px solid #aaa;
+      padding: 10px;
+      text-align: center;
+    }
+    .controls button {
+      margin-right: 5px;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Добавить или изменить ученика</h2>
+
+<form id="studentForm">
+  <label>Имя: <input type="text" id="name" required /></label>
+  <label>Фамилия: <input type="text" id="surname" required /></label>
+  <label>Класс: <input type="text" id="classNumber" required /></label>
+  <label>Часы: <input type="number" id="hours" min="0" value="0" /></label>
+  <label>Минуты: <input type="number" id="minutes" min="0" max="59" value="5" /></label>
+  <label>Комментарий: <textarea id="comment" rows="2"></textarea></label>
+  <label>Логотип (для display.html): <input type="file" id="logo" accept="image/*" /></label>
+  <button type="submit" id="submitBtn">Добавить</button>
+</form>
+
+<h3>Список учеников</h3>
+<table id="studentsTable">
+  <thead>
+    <tr>
+      <th>Имя</th>
+      <th>Фамилия</th>
+      <th>Класс</th>
+      <th>Комментарий</th>
+      <th>Время</th>
+      <th>Действия</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<p><a href="display.html" target="_blank">Открыть display.html во вкладке</a></p>
+
+<script>
+  const form = document.getElementById("studentForm");
+  const table = document.getElementById("studentsTable").querySelector("tbody");
+
+  let students = JSON.parse(localStorage.getItem("students")) || [];
+  let editIndex = null;
+
+  function saveStudents() {
+    localStorage.setItem("students", JSON.stringify(students));
+  }
+
+  function updateTable() {
+    table.innerHTML = "";
+    students.forEach((student, index) => {
+      const row = document.createElement("tr");
+
+      row.innerHTML = `
+        <td>${student.name}</td>
+        <td>${student.surname}</td>
+        <td>${student.classNumber}</td>
+        <td>${student.comment || ''}</td>
+        <td>${Math.floor(student.time / 3600)} ч ${Math.floor((student.time % 3600) / 60)} мин</td>
+        <td class="controls">
+          <button onclick="editStudent(${index})">Изменить</button>
+          <button onclick="deleteStudent(${index})">Удалить</button>
+          <button onclick="toggleDisplay(${index})">
+            ${student.display ? "Скрыть" : "Показать"}
+          </button>
+        </td>
+      `;
+
+      table.appendChild(row);
+    });
+  }
+
+  function editStudent(index) {
+    const student = students[index];
+    document.getElementById("name").value = student.name;
+    document.getElementById("surname").value = student.surname;
+    document.getElementById("classNumber").value = student.classNumber;
+    document.getElementById("comment").value = student.comment;
+    document.getElementById("hours").value = Math.floor(student.time / 3600);
+    document.getElementById("minutes").value = Math.floor((student.time % 3600) / 60);
+
+    editIndex = index;
+    document.getElementById("submitBtn").textContent = "Сохранить";
+  }
+
+  function deleteStudent(index) {
+    students.splice(index, 1);
+    saveStudents();
+    updateTable();
+  }
+
+  function toggleDisplay(index) {
+    students[index].display = !students[index].display;
+    saveStudents();
+    updateTable();
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const name = document.getElementById("name").value;
+    const surname = document.getElementById("surname").value;
+    const classNumber = document.getElementById("classNumber").value;
+    const hours = parseInt(document.getElementById("hours").value) || 0;
+    const minutes = parseInt(document.getElementById("minutes").value) || 0;
+    const comment = document.getElementById("comment").value;
+    const logoFile = document.getElementById("logo").files[0];
+
+    const time = hours * 3600 + minutes * 60;
+    const startTimestamp = Date.now();
+
+    if (logoFile) {
+      const logoData = await readFileAsync(logoFile);
+      localStorage.setItem("logoImage", logoData);
+    }
+
+    const student = {
+      name, surname, classNumber, comment, time, startTimestamp, display: true
+    };
+
+    if (editIndex !== null) {
+      students[editIndex] = student;
+      editIndex = null;
+      document.getElementById("submitBtn").textContent = "Добавить";
+    } else {
+      students.push(student);
+    }
+
+    saveStudents();
+    updateTable();
+    form.reset();
+  });
+
+  function readFileAsync(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  updateTable();
+</script>
+
+</body>
+</html>
