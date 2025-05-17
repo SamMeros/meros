@@ -2,6 +2,15 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
+  <title>Форма с паролем</title>
+  <script>
+    const password = prompt("Введите пароль для доступа:");
+    const correctPassword = "1234";
+    if (password !== correctPassword) {
+      document.write("<h2 style='color:red;text-align:center;margin-top:20%'>⛔ Доступ запрещён</h2>");
+      window.stop(); // Останавливает дальнейшую загрузку
+    }
+  </script>
   <title>Форма добавления учеников</title>
   <style>
     body {
