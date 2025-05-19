@@ -1,210 +1,213 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8" />
-<title>Display</title>
-<style>
-  body {
-    font-family: sans-serif;
-    padding: 20px;
-    background: #eef;
-  }
-  #logo {
-    position: fixed;
-    top: 10px;
-    right: 30px;
-    max-width: 100px;
-    max-height: 100px;
-    z-index: 10;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    background: #fff;
-    margin-top: 50px; /* Отступ сверху, чтобы логотип не налезал */
-  }
-  th, td {
-    border: 1px solid #aaa;
-    padding: 10px;
-    text-align: center;
-  }
-  .timer-container {
-    position: relative;
-    width: 60px;
-    height: 60px;
-    margin: 0;
-  }
-  svg {
-    transform: rotate(-90deg);
-  }
-  circle {
-    fill: none;
-    stroke-width: 8;
-    stroke-linecap: round;
-  }
-  .background {
-    stroke: #fff;
-  }
-  .progress {
-    stroke: transparent !important;
-    transition: stroke 0.3s;
-  }
-  .center-logo {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 50px;
-    height: 50px;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-  }
-  .timer-text {
-    font-weight: bold;
-    font-size: 14px;
-    padding-left: 6px;  /* Уменьшили отступ между кругом и временем */
-    vertical-align: middle;
-    white-space: nowrap;
-  }
-</style>
-</head>
-<body>
+  <meta charset="UTF-8" />
+  <title>Отображение учеников</title>
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    .logo { position: absolute; top: 10px; right: 20px; height: 60px; }
 
-<img id="logo" src="" alt="Логотип" />
+    table { width: 100%; border-collapse: collapse; margin-top: 100px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
 
-<table>
-  <thead>
-    <tr>
-      <th>Имя</th>
-      <th>Фамилия</th>
-      <th>Класс</th>
-      <th>Таймер</th>
-      <th>Комментарий</th>
-    </tr>
-  </thead>
-  <tbody id="studentsBody"></tbody>
-</table>
-
-<script>
-  const RADIUS = 26;
-  const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
-  const studentsBody = document.getElementById('studentsBody');
-  const logoImg = document.getElementById('logo');
-
-  // Логотип в правом верхнем углу
-  const logoData = localStorage.getItem('logoImage');
-  if (logoData) {
-    logoImg.src = logoData;
-  }
-
-  // Иконка песочных часов (можно заменить ссылку на свой логотип часов)
-  const hourglassIcon = 't.gif';
-
-  let students = JSON.parse(localStorage.getItem('students')) || [];
-
-  function formatTime(sec) {
-    const h = Math.floor(sec / 3600);
-    const m = Math.floor((sec % 3600) / 60);
-    const s = sec % 60;
-    return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-  }
-
-  function createTimerCell(student, index) {
-    const container = document.createElement('td');
-    container.style.display = 'flex';
-    container.style.alignItems = 'center';
-    container.style.justifyContent = 'center';
-
-    const timerDiv = document.createElement('div');
-    timerDiv.className = 'timer-container';
-
-    const svgNS = "http://www.w3.org/2000/svg";
-    const svg = document.createElementNS(svgNS, 'svg');
-    svg.setAttribute('width', '60');
-    svg.setAttribute('height', '60');
-
-    const bgCircle = document.createElementNS(svgNS, 'circle');
-    bgCircle.classList.add('background');
-    bgCircle.setAttribute('r', RADIUS);
-    bgCircle.setAttribute('cx', 30);
-    bgCircle.setAttribute('cy', 30);
-    svg.appendChild(bgCircle);
-
-    const progressCircle = document.createElementNS(svgNS, 'circle');
-    progressCircle.classList.add('progress');
-    progressCircle.setAttribute('r', RADIUS);
-    progressCircle.setAttribute('cx', 30);
-    progressCircle.setAttribute('cy', 30);
-    progressCircle.style.strokeDasharray = CIRCUMFERENCE;
-    progressCircle.style.strokeDashoffset = 0;
-    svg.appendChild(progressCircle);
-
-    timerDiv.appendChild(svg);
-
-    // Вставляем внутрь круга иконку песочных часов
-    const centerLogo = document.createElement('img');
-    centerLogo.src = hourglassIcon;
-    centerLogo.className = 'center-logo';
-    timerDiv.appendChild(centerLogo);
-
-    container.appendChild(timerDiv);
-
-    // Текст времени рядом с кругом
-    const timeText = document.createElement('div');
-    timeText.className = 'timer-text';
-    timeText.style.minWidth = '75px';
-    timeText.textContent = formatTime(student.time);
-    container.appendChild(timeText);
-
-    let interval = null;
-
-    function update() {
-      const now = Date.now();
-      const elapsed = Math.floor((now - student.startTimestamp) / 1000);
-      let left = student.time - elapsed;
-      if (left < 0) left = 0;
-
-      timeText.textContent = formatTime(left);
-
-      const progressPercent = left / student.time;
-      progressCircle.style.strokeDashoffset = CIRCUMFERENCE * (1 - progressPercent);
-
-      if (progressPercent <= 0.2) {
-        progressCircle.style.stroke = 'red';
-      } else {
-        progressCircle.style.stroke = 'green';
-      }
+    .circle-container {
+      position: relative;
+      width: 80px;
+      height: 80px;
     }
 
-    update();
-    interval = setInterval(update, 1000);
+    .progress-ring {
+      transform: rotate(-90deg);
+    }
 
-    return container;
+    .progress-ring__circle {
+      stroke: green;
+      stroke-width: 8;
+      fill: transparent;
+      transition: stroke-dashoffset 1s linear;
+    }
+
+    .progress-ring__circle.red {
+      stroke: red;
+    }
+
+    .circle-gif {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 1;
+    }
+
+    .timer-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .timer-text {
+      font-size: 36px;
+      font-weight: bold;
+    }
+	@keyframes blink {
+  0%   { opacity: 1; }
+  50%  { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.blinking {
+  animation: blink 1s infinite;
+}
+
+  </style>
+</head>
+<body>
+  <img src="logo.png" alt="Logo" class="logo" />
+  <table>
+    <thead>
+      <tr>
+        <th>Имя</th>
+        <th>Фамилия</th>
+        <th>№ опер</th>
+        <th>Комментарий</th>
+        <th>Остав.время</th>
+      </tr>
+    </thead>
+    <tbody id="studentTable"></tbody>
+  </table>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+    import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCF5BOseh3j9qi3SGAJVciuI-ZJIv6l14o",
+      authDomain: "oper-timers.firebaseapp.com",
+      projectId: "oper-timers",
+      storageBucket: "oper-timers.appspot.com",
+      messagingSenderId: "450325075997",
+      appId: "1:450325075997:web:302304d9119ee884208ef4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const table = document.getElementById("studentTable");
+
+    function formatTime(sec) {
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      const s = sec % 60;
+      return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+
+    function createProgressCircle(secondsLeft, total) {
+      const radius = 35;
+      const circumference = 2 * Math.PI * radius;
+      const percent = secondsLeft / total;
+      const offset = circumference * (1 - percent);
+
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("width", "80");
+      svg.setAttribute("height", "80");
+      svg.classList.add("progress-ring");
+
+      const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      circle.setAttribute("r", radius);
+      circle.setAttribute("cx", "40");
+      circle.setAttribute("cy", "40");
+      circle.classList.add("progress-ring__circle");
+      if (percent < 0.2) circle.classList.add("red");
+
+      circle.style.strokeDasharray = `${circumference}`;
+      circle.style.strokeDashoffset = `${offset}`;
+
+      svg.appendChild(circle);
+      return svg;
+    }
+
+    function createTimerDisplay(secondsLeft, total) {
+  const container = document.createElement("div");
+  container.className = "circle-container";
+
+  const gif = document.createElement("img");
+  gif.src = "sand.gif";
+  gif.className = "circle-gif";
+
+  if (secondsLeft > 0) {
+    const progress = createProgressCircle(secondsLeft, total);
+    container.appendChild(progress);
   }
 
-  function render() {
-    studentsBody.innerHTML = '';
-    students.forEach((student, i) => {
-      if (!student.display) return;
+  container.appendChild(gif);
 
-      const tr = document.createElement('tr');
+  const timerText = document.createElement("div");
+  timerText.className = "timer-text";
+  timerText.textContent = formatTime(secondsLeft);
 
-      tr.innerHTML = `
-        <td>${student.name}</td>
-        <td>${student.surname}</td>
-        <td>${student.classNumber}</td>
-        <td></td> <!-- Таймер вставим сюда -->
-        <td>${student.comment || ''}</td>
-      `;
+  if (secondsLeft <= 0) {
+    timerText.classList.add("blinking");
+  }
 
-      const timerCell = createTimerCell(student, i);
-      tr.replaceChild(timerCell, tr.cells[3]);
+  const wrapper = document.createElement("div");
+  wrapper.className = "timer-wrapper";
+  wrapper.appendChild(container);
+  wrapper.appendChild(timerText);
 
-      studentsBody.appendChild(tr);
+  return wrapper;
+}
+
+
+    let students = [];
+
+    onSnapshot(collection(db, "students"), (snapshot) => {
+      students = [];
+      table.innerHTML = "";
+      snapshot.forEach(doc => {
+        const d = doc.data();
+        if (!d.visible || !d.startTime) return;
+
+        const startTime = d.startTime.seconds;
+        const now = Math.floor(Date.now() / 1000);
+        const elapsed = now - startTime;
+        const remaining = Math.max(0, d.duration - elapsed);
+
+        students.push({ doc, remaining, total: d.duration });
+      });
+      renderTable();
     });
-  }
 
-  render();
-</script>
+    function renderTable() {
+      table.innerHTML = "";
+      students.forEach(({ doc, remaining, total }) => {
+        const d = doc.data();
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${d.firstName}</td>
+          <td>${d.lastName}</td>
+          <td>${d.classNumber}</td>
+          <td>${d.comment || ""}</td>
+        `;
+        const td = document.createElement("td");
+        td.appendChild(createTimerDisplay(remaining, total));
+        tr.appendChild(td);
+        table.appendChild(tr);
+      });
+    }
 
+    setInterval(() => {
+      students = students.map(({ doc, total }) => {
+        const d = doc.data();
+        const startTime = d.startTime.seconds;
+        const now = Math.floor(Date.now() / 1000);
+        const elapsed = now - startTime;
+        const remaining = Math.max(0, d.duration - elapsed);
+        return { doc, remaining, total };
+      });
+      renderTable();
+    }, 1000);
+  </script>
 </body>
 </html>
