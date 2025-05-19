@@ -2,181 +2,144 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>Форма с паролем</title>
-  <script>
-    const password = prompt("Введите пароль для доступа:");
-    const correctPassword = "1234";
-    if (password !== correctPassword) {
-      document.write("<h2 style='color:red;text-align:center;margin-top:20%'>⛔ Доступ запрещён</h2>");
-      window.stop(); // Останавливает дальнейшую загрузку
-    }
-  </script>
-  <title>Форма добавления учеников</title>
+  <title>Форма добавления ученика</title>
   <style>
-    body {
-      font-family: sans-serif;
-      padding: 20px;
-      background: #eef;
-    }
-    label, input, select, textarea {
-      display: block;
-      margin: 10px 0;
-      font-size: 16px;
-    }
-    table {
-      margin-top: 30px;
-      width: 100%;
-      border-collapse: collapse;
-      background: #fff;
-    }
-    th, td {
-      border: 1px solid #aaa;
-      padding: 10px;
-      text-align: center;
-    }
-    .controls button {
-      margin-right: 5px;
-    }
+    body { font-family: sans-serif; margin: 20px; }
+    label { display: block; margin-top: 10px; }
+    input, button, select { margin-top: 5px; }
+    table { margin-top: 20px; border-collapse: collapse; width: 100%; }
+    td, th { border: 1px solid #ccc; padding: 5px; text-align: center; }
+    .saved { color: green; font-size: 14px; margin-left: 10px; }
+    input[type=number] { width: 50px; }
   </style>
 </head>
 <body>
+  <h2>Добавить ученика</h2>
+  <form id="studentForm">
+    <label>Имя: <input type="text" id="firstName" required /></label>
+    <label>Фамилия: <input type="text" id="lastName" required /></label>
+    <label>Класс: <input type="text" id="classNumber" required /></label>
+    <label>Комментарий: <input type="text" id="comment" /></label>
+    <label>Часы: <input type="number" id="hours" min="0" value="0" /></label>
+    <label>Минуты: <input type="number" id="minutes" min="0" value="1" /></label>
+    <label><input type="checkbox" id="visibleOnDisplay" checked /> Отображать в display</label>
+    <label>Загрузить логотип: <input type="file" id="logoUpload" accept="image/*" /></label>
+    <button type="submit">Добавить</button>
+  </form>
 
-<h2>Добавить или изменить ученика</h2>
+  <a href="display.html" target="_blank"><button>Открыть display</button></a>
 
-<form id="studentForm">
-  <label>Имя: <input type="text" id="name" required /></label>
-  <label>Фамилия: <input type="text" id="surname" required /></label>
-  <label>Класс: <input type="text" id="classNumber" required /></label>
-  <label>Часы: <input type="number" id="hours" min="0" value="0" /></label>
-  <label>Минуты: <input type="number" id="minutes" min="0" max="59" value="5" /></label>
-  <label>Комментарий: <textarea id="comment" rows="2"></textarea></label>
-  <label>Логотип (для display.html): <input type="file" id="logo" accept="image/*" /></label>
-  <button type="submit" id="submitBtn">Добавить</button>
-</form>
+  <h3>Список учеников</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Имя</th><th>Фамилия</th><th>Класс</th><th>Комментарий</th><th>Показывать</th><th>Часы</th><th>Минуты</th><th>Действия</th>
+      </tr>
+    </thead>
+    <tbody id="studentsTable"></tbody>
+  </table>
 
-<h3>Список учеников</h3>
-<table id="studentsTable">
-  <thead>
-    <tr>
-      <th>Имя</th>
-      <th>Фамилия</th>
-      <th>Класс</th>
-      <th>Комментарий</th>
-      <th>Время</th>
-      <th>Действия</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, updateDoc, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 
-<p><a href="display.html" target="_blank">Открыть display.html во вкладке</a></p>
-
-<script>
-  const form = document.getElementById("studentForm");
-  const table = document.getElementById("studentsTable").querySelector("tbody");
-
-  let students = JSON.parse(localStorage.getItem("students")) || [];
-  let editIndex = null;
-
-  function saveStudents() {
-    localStorage.setItem("students", JSON.stringify(students));
-  }
-
-  function updateTable() {
-    table.innerHTML = "";
-    students.forEach((student, index) => {
-      const row = document.createElement("tr");
-
-      row.innerHTML = `
-        <td>${student.name}</td>
-        <td>${student.surname}</td>
-        <td>${student.classNumber}</td>
-        <td>${student.comment || ''}</td>
-        <td>${Math.floor(student.time / 3600)} ч ${Math.floor((student.time % 3600) / 60)} мин</td>
-        <td class="controls">
-          <button onclick="editStudent(${index})">Изменить</button>
-          <button onclick="deleteStudent(${index})">Удалить</button>
-          <button onclick="toggleDisplay(${index})">
-            ${student.display ? "Скрыть" : "Показать"}
-          </button>
-        </td>
-      `;
-
-      table.appendChild(row);
-    });
-  }
-
-  function editStudent(index) {
-    const student = students[index];
-    document.getElementById("name").value = student.name;
-    document.getElementById("surname").value = student.surname;
-    document.getElementById("classNumber").value = student.classNumber;
-    document.getElementById("comment").value = student.comment;
-    document.getElementById("hours").value = Math.floor(student.time / 3600);
-    document.getElementById("minutes").value = Math.floor((student.time % 3600) / 60);
-
-    editIndex = index;
-    document.getElementById("submitBtn").textContent = "Сохранить";
-  }
-
-  function deleteStudent(index) {
-    students.splice(index, 1);
-    saveStudents();
-    updateTable();
-  }
-
-  function toggleDisplay(index) {
-    students[index].display = !students[index].display;
-    saveStudents();
-    updateTable();
-  }
-
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const name = document.getElementById("name").value;
-    const surname = document.getElementById("surname").value;
-    const classNumber = document.getElementById("classNumber").value;
-    const hours = parseInt(document.getElementById("hours").value) || 0;
-    const minutes = parseInt(document.getElementById("minutes").value) || 0;
-    const comment = document.getElementById("comment").value;
-    const logoFile = document.getElementById("logo").files[0];
-
-    const time = hours * 3600 + minutes * 60;
-    const startTimestamp = Date.now();
-
-    if (logoFile) {
-      const logoData = await readFileAsync(logoFile);
-      localStorage.setItem("logoImage", logoData);
-    }
-
-    const student = {
-      name, surname, classNumber, comment, time, startTimestamp, display: true
+    const firebaseConfig = {
+      apiKey: "AIzaSyCF5BOseh3j9qi3SGAJVciuI-ZJIv6l14o",
+      authDomain: "oper-timers.firebaseapp.com",
+      projectId: "oper-timers",
+      storageBucket: "oper-timers.appspot.com",
+      messagingSenderId: "450325075997",
+      appId: "1:450325075997:web:302304d9119ee884208ef4"
     };
 
-    if (editIndex !== null) {
-      students[editIndex] = student;
-      editIndex = null;
-      document.getElementById("submitBtn").textContent = "Добавить";
-    } else {
-      students.push(student);
-    }
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const form = document.getElementById("studentForm");
+    const tableBody = document.getElementById("studentsTable");
 
-    saveStudents();
-    updateTable();
-    form.reset();
-  });
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const firstName = document.getElementById("firstName").value.trim();
+      const lastName = document.getElementById("lastName").value.trim();
+      const classNumber = document.getElementById("classNumber").value.trim();
+      const comment = document.getElementById("comment").value.trim();
+      const hours = parseInt(document.getElementById("hours").value) || 0;
+      const minutes = parseInt(document.getElementById("minutes").value) || 0;
+      const visible = document.getElementById("visibleOnDisplay").checked;
+      const duration = (hours * 3600) + (minutes * 60);
 
-  function readFileAsync(file) {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.readAsDataURL(file);
+      await addDoc(collection(db, "students"), {
+        firstName, lastName, classNumber, comment, duration, visible,
+        startTime: serverTimestamp()
+      });
+
+      form.reset();
     });
-  }
 
-  updateTable();
-</script>
+    onSnapshot(collection(db, "students"), (snapshot) => {
+      tableBody.innerHTML = "";
+      snapshot.forEach(docSnap => {
+        const d = docSnap.data();
 
+        // Вычисляем часы и минуты из duration (в секундах)
+        const totalMinutes = Math.floor((d.duration || 0) / 60);
+        const durationHours = Math.floor(totalMinutes / 60);
+        const durationMinutes = totalMinutes % 60;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><input type="text" value="${d.firstName}" /></td>
+          <td><input type="text" value="${d.lastName}" /></td>
+          <td><input type="text" value="${d.classNumber}" /></td>
+          <td><input type="text" value="${d.comment || ''}" /></td>
+          <td><input type="checkbox" ${d.visible ? "checked" : ""} /></td>
+          <td><input type="number" min="0" value="${durationHours}" /></td>
+          <td><input type="number" min="0" value="${durationMinutes}" /></td>
+          <td>
+            <button class="save">Сохранить</button>
+            <button class="delete">Удалить</button>
+            <button class="reset">Сброс</button>
+            <span class="saved" style="display:none;">Сохранено ✅</span>
+          </td>
+        `;
+
+        const inputs = tr.querySelectorAll("input");
+        const saveBtn = tr.querySelector(".save");
+        const deleteBtn = tr.querySelector(".delete");
+        const resetBtn = tr.querySelector(".reset");
+        const savedMsg = tr.querySelector(".saved");
+
+        saveBtn.onclick = async () => {
+          const newHours = parseInt(inputs[5].value) || 0;
+          const newMinutes = parseInt(inputs[6].value) || 0;
+          const newDuration = (newHours * 3600) + (newMinutes * 60);
+
+          await updateDoc(doc(db, "students", docSnap.id), {
+            firstName: inputs[0].value.trim(),
+            lastName: inputs[1].value.trim(),
+            classNumber: inputs[2].value.trim(),
+            comment: inputs[3].value.trim(),
+            visible: inputs[4].checked,
+            duration: newDuration
+          });
+          savedMsg.style.display = "inline";
+          setTimeout(() => savedMsg.style.display = "none", 2000);
+        };
+
+        deleteBtn.onclick = async () => {
+          await deleteDoc(doc(db, "students", docSnap.id));
+        };
+
+        resetBtn.onclick = async () => {
+          // Сбрасываем таймер: устанавливаем startTime на текущее время
+          await updateDoc(doc(db, "students", docSnap.id), {
+            startTime: serverTimestamp()
+          });
+        };
+
+        tableBody.appendChild(tr);
+      });
+    });
+  </script>
 </body>
 </html>
