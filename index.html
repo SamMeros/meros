@@ -2,46 +2,91 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>Форма добавления ученика</title>
+  <title>Отображение учеников</title>
   <style>
-    body { font-family: sans-serif; margin: 20px; }
-    label { display: block; margin-top: 10px; }
-    input, button, select { margin-top: 5px; }
-    table { margin-top: 20px; border-collapse: collapse; width: 100%; }
-    td, th { border: 1px solid #ccc; padding: 5px; text-align: center; }
-    .saved { color: green; font-size: 14px; margin-left: 10px; }
-    input[type=number] { width: 50px; }
+    body { font-family: sans-serif; margin: 20px; 
+	background-image: url('background.jpg');
+  background-size: cover;       /* подгонка по размеру экрана */
+  background-repeat: no-repeat; /* не повторять */
+  background-attachment: fixed; /* зафиксировать фон */
+	}
+    .logo { position: absolute; top: 10px;  height: 100px; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 125px; }
+    th, td { border: 1px solid #000; padding: 8px; text-align: center; }
+
+    .circle-container {
+      position: relative;
+      width: 80px;
+      height: 80px;
+    }
+
+    .progress-ring {
+      transform: rotate(-90deg);
+    }
+
+    .progress-ring__circle {
+      stroke: green;
+      stroke-width: 8;
+      fill: transparent;
+      transition: stroke-dashoffset 1s linear;
+    }
+
+    .progress-ring__circle.red {
+      stroke: red;
+    }
+
+    .circle-gif {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 1;
+    }
+
+    .timer-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .timer-text {
+      font-size: 36px;
+      font-weight: bold;
+    }
+	@keyframes blink {
+  0%   { opacity: 1; }
+  50%  { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.blinking {
+  animation: blink 1s infinite;
+}
+
   </style>
 </head>
 <body>
-  <h2>Добавить ученика</h2>
-  <form id="studentForm">
-    <label>Имя: <input type="text" id="firstName" required /></label>
-    <label>Фамилия: <input type="text" id="lastName" required /></label>
-    <label>Класс: <input type="text" id="classNumber" required /></label>
-    <label>Комментарий: <input type="text" id="comment" /></label>
-    <label>Часы: <input type="number" id="hours" min="0" value="0" /></label>
-    <label>Минуты: <input type="number" id="minutes" min="0" value="1" /></label>
-    <label><input type="checkbox" id="visibleOnDisplay" checked /> Отображать в display</label>
-    <label>Загрузить логотип: <input type="file" id="logoUpload" accept="image/*" /></label>
-    <button type="submit">Добавить</button>
-  </form>
-
-  <a href="display.html" target="_blank"><button>Открыть display</button></a>
-
-  <h3>Список учеников</h3>
+  <img src="logo.png" alt="Logo" class="logo" />
   <table>
     <thead>
       <tr>
-        <th>Имя</th><th>Фамилия</th><th>Класс</th><th>Комментарий</th><th>Показывать</th><th>Часы</th><th>Минуты</th><th>Действия</th>
+        <th>Имя</th>
+        <th>Фамилия</th>
+        <th>№ опер</th>
+        <th>Комментарий</th>
+        <th>Остав.время</th>
       </tr>
     </thead>
-    <tbody id="studentsTable"></tbody>
+    <tbody id="studentTable"></tbody>
   </table>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, updateDoc, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+    import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCF5BOseh3j9qi3SGAJVciuI-ZJIv6l14o",
@@ -54,92 +99,120 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    const form = document.getElementById("studentForm");
-    const tableBody = document.getElementById("studentsTable");
+    const table = document.getElementById("studentTable");
 
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const firstName = document.getElementById("firstName").value.trim();
-      const lastName = document.getElementById("lastName").value.trim();
-      const classNumber = document.getElementById("classNumber").value.trim();
-      const comment = document.getElementById("comment").value.trim();
-      const hours = parseInt(document.getElementById("hours").value) || 0;
-      const minutes = parseInt(document.getElementById("minutes").value) || 0;
-      const visible = document.getElementById("visibleOnDisplay").checked;
-      const duration = (hours * 3600) + (minutes * 60);
+    function formatTime(sec) {
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      const s = sec % 60;
+      return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
 
-      await addDoc(collection(db, "students"), {
-        firstName, lastName, classNumber, comment, duration, visible,
-        startTime: serverTimestamp()
-      });
+    function createProgressCircle(secondsLeft, total) {
+      const radius = 35;
+      const circumference = 2 * Math.PI * radius;
+      const percent = secondsLeft / total;
+      const offset = circumference * (1 - percent);
 
-      form.reset();
-    });
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("width", "80");
+      svg.setAttribute("height", "80");
+      svg.classList.add("progress-ring");
+
+      const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      circle.setAttribute("r", radius);
+      circle.setAttribute("cx", "40");
+      circle.setAttribute("cy", "40");
+      circle.classList.add("progress-ring__circle");
+      if (percent < 0.2) circle.classList.add("red");
+
+      circle.style.strokeDasharray = `${circumference}`;
+      circle.style.strokeDashoffset = `${offset}`;
+
+      svg.appendChild(circle);
+      return svg;
+    }
+
+    function createTimerDisplay(secondsLeft, total) {
+  const container = document.createElement("div");
+  container.className = "circle-container";
+
+  const gif = document.createElement("img");
+  gif.src = "sand.gif";
+  gif.className = "circle-gif";
+
+  if (secondsLeft > 0) {
+    const progress = createProgressCircle(secondsLeft, total);
+    container.appendChild(progress);
+  }
+
+  container.appendChild(gif);
+
+  const timerText = document.createElement("div");
+  timerText.className = "timer-text";
+  timerText.textContent = formatTime(secondsLeft);
+
+  if (secondsLeft <= 0) {
+    timerText.classList.add("blinking");
+  }
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "timer-wrapper";
+  wrapper.appendChild(container);
+  wrapper.appendChild(timerText);
+
+  return wrapper;
+}
+
+
+    let students = [];
 
     onSnapshot(collection(db, "students"), (snapshot) => {
-      tableBody.innerHTML = "";
-      snapshot.forEach(docSnap => {
-        const d = docSnap.data();
+      students = [];
+      table.innerHTML = "";
+      snapshot.forEach(doc => {
+        const d = doc.data();
+        if (!d.visible || !d.startTime) return;
 
-        // Вычисляем часы и минуты из duration (в секундах)
-        const totalMinutes = Math.floor((d.duration || 0) / 60);
-        const durationHours = Math.floor(totalMinutes / 60);
-        const durationMinutes = totalMinutes % 60;
+        const startTime = d.startTime.seconds;
+        const now = Math.floor(Date.now() / 1000);
+        const elapsed = now - startTime;
+        const remaining = Math.max(0, d.duration - elapsed);
 
+        students.push({ doc, remaining, total: d.duration });
+      });
+      renderTable();
+    });
+
+    function renderTable() {
+      table.innerHTML = "";
+      students.forEach(({ doc, remaining, total }) => {
+        const d = doc.data();
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td><input type="text" value="${d.firstName}" /></td>
-          <td><input type="text" value="${d.lastName}" /></td>
-          <td><input type="text" value="${d.classNumber}" /></td>
-          <td><input type="text" value="${d.comment || ''}" /></td>
-          <td><input type="checkbox" ${d.visible ? "checked" : ""} /></td>
-          <td><input type="number" min="0" value="${durationHours}" /></td>
-          <td><input type="number" min="0" value="${durationMinutes}" /></td>
-          <td>
-            <button class="save">Сохранить</button>
-            <button class="delete">Удалить</button>
-            <button class="reset">Сброс</button>
-            <span class="saved" style="display:none;">Сохранено ✅</span>
-          </td>
+          <td>${d.firstName}</td>
+          <td>${d.lastName}</td>
+          <td>${d.classNumber}</td>
+          <td>${d.comment || ""}</td>
         `;
-
-        const inputs = tr.querySelectorAll("input");
-        const saveBtn = tr.querySelector(".save");
-        const deleteBtn = tr.querySelector(".delete");
-        const resetBtn = tr.querySelector(".reset");
-        const savedMsg = tr.querySelector(".saved");
-
-        saveBtn.onclick = async () => {
-          const newHours = parseInt(inputs[5].value) || 0;
-          const newMinutes = parseInt(inputs[6].value) || 0;
-          const newDuration = (newHours * 3600) + (newMinutes * 60);
-
-          await updateDoc(doc(db, "students", docSnap.id), {
-            firstName: inputs[0].value.trim(),
-            lastName: inputs[1].value.trim(),
-            classNumber: inputs[2].value.trim(),
-            comment: inputs[3].value.trim(),
-            visible: inputs[4].checked,
-            duration: newDuration
-          });
-          savedMsg.style.display = "inline";
-          setTimeout(() => savedMsg.style.display = "none", 2000);
-        };
-
-        deleteBtn.onclick = async () => {
-          await deleteDoc(doc(db, "students", docSnap.id));
-        };
-
-        resetBtn.onclick = async () => {
-          // Сбрасываем таймер: устанавливаем startTime на текущее время
-          await updateDoc(doc(db, "students", docSnap.id), {
-            startTime: serverTimestamp()
-          });
-        };
-
-        tableBody.appendChild(tr);
+        const td = document.createElement("td");
+        td.appendChild(createTimerDisplay(remaining, total));
+        tr.appendChild(td);
+        table.appendChild(tr);
       });
-    });
+    }
+
+    setInterval(() => {
+      students = students.map(({ doc, total }) => {
+        const d = doc.data();
+        const startTime = d.startTime.seconds;
+        const now = Math.floor(Date.now() / 1000);
+        const elapsed = now - startTime;
+        const remaining = Math.max(0, d.duration - elapsed);
+        return { doc, remaining, total };
+      });
+      renderTable();
+    }, 1000);
   </script>
 </body>
 </html>
