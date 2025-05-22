@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Часы и Погода</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-image: url('background.jpg'); /* ← замените на ваш фон */
+      background-size: cover;
+      background-position: center;
+      height: 100vh;
+      color: white;
+      text-shadow: 2px 2px 6px #000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo {
+      position: absolute;
+      top: 15px;
+      left: 20px;
+      height: 70px;
+      opacity: 0.9;
+    }
+
+    .clock-container {
+      background: rgba(0, 0, 0, 0.5);
+      padding: 40px 60px;
+      border-radius: 20px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+      text-align: center;
+	  margin-top: 80px; /* Увеличь это значение для большего отступа вниз */
+    }
+
+    .clock {
+      font-size: 96px; /* увеличено на 20% */
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+
+    .date {
+      font-size: 48px; /* увеличено на 20% */
+      margin-bottom: 25px;
+    }
+
+    .weather {
+      font-size: 36px; /* увеличено на 20% */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .weather img {
+      height: 60px;
+      width: 60px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Логотип -->
+  <img src="logo.png" alt="Логотип" class="logo">
+
+  <!-- Блок часов -->
+  <div class="clock-container">
+    <div class="clock" id="clock">00:00:00</div>
+    <div class="date" id="date">Загрузка даты...</div>
+    <div class="weather" id="weather">Загрузка погоды...</div>
+  </div>
+
+  <script>
+    function updateTime() {
+      const now = new Date();
+      const time = now.toLocaleTimeString('ru-RU', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+
+      const date = now.toLocaleDateString('ru-RU', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+
+      document.getElementById('clock').textContent = time;
+      document.getElementById('date').textContent = date;
+    }
+
+    setInterval(updateTime, 1000);
+    updateTime();
+
+    async function fetchWeather() {
+      try {
+        const apiKey = "2603bb7e64896b5e1e420c23d1d6c111";
+        const city = "Samarkand";
+        const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&lang=ru&units=metric`;
+
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+        const data = await res.json();
+        const temp = Math.round(data.main.temp);
+        const description = data.weather[0].description;
+        const icon = data.weather[0].icon;
+        const iconUrl = `https://openweathermap.org/img/wn/${icon}@2x.png`;
+
+        document.getElementById('weather').innerHTML =
+          `Погода: ${description}, ${temp}°C <img src="${iconUrl}" alt="Погода">`;
+      } catch (e) {
+        document.getElementById('weather').textContent =
+          `Ошибка загрузки погоды: ${e.message}`;
+      }
+    }
+
+    fetchWeather();
+    setInterval(fetchWeather, 600000); // каждые 10 мин
+  </script>
+</body>
+</html>
