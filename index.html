@@ -30,7 +30,7 @@
       align-items: flex-start;
       justify-content: center;
       gap: 15px;
-      
+      animation: blink 1.5s infinite;
     }
     .warning-icon {
       font-size: 30px;
@@ -52,10 +52,11 @@
   <table>
     <thead>
       <tr>
-       
-        <th>ФИО пациента</th>
+        
+        <th>ФИО Пациента</th>
         <th>Комментарий</th>
-        <th>Врач</th>
+		<th>Врач</th>
+        <th>№ опер.блока</th>
         <th>Статус</th>
       </tr>
     </thead>
@@ -93,9 +94,9 @@
           <td>${d.lastName}</td>
           <td>${d.comment || ""}</td>
 		  <td>${d.classNumber}</td>
-         
+          <td>${d.firstName}</td>
           <td><span class="status-text ${d.status === 'done' ? 'done' : 'active'}">${
-            d.status === 'done' ? 'Операция закончилась/тугади' : 'Идёт операция'
+            d.status === 'done' ? 'Операция закончилась' : 'Идёт операция'
           }</span></td>
         `;
         table.appendChild(tr);
