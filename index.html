@@ -3,7 +3,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>Сисок пациентов</title>
+  <title>Отображение учеников</title>
   <style>
     body {
       font-family: sans-serif;
@@ -16,34 +16,60 @@
     .logo { position: absolute; top: 10px; height: 100px; }
     table { width: 100%; border-collapse: collapse; margin-top: 125px; }
     th, td { border: 1px solid #000; padding: 3px; text-align: center; }
+
+	.marquee-container {
+      width: 250px;
+      overflow: hidden;
+      position: relative;
+      height: 30px;
+      margin: 0 auto;
+    }
+
+    .status-track {
+      display: inline-block;
+      white-space: nowrap;
+      font-size: 20px;
+      font-weight: bold;
+      animation: scroll-loop 12s linear infinite;
+    }					
+
+						   
     .status-text {
+
+							
       font-size: 20px;
       font-weight: bold;
       animation: blink 1s infinite;
     }
+				  
     .active { color: red; }
     .done { color: green; }
 
+	@keyframes scroll-loop {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }				
+	 
+
     .warning-box {
       margin-top: 30px;
+				 
       display: flex;
       align-items: flex-start;
       justify-content: center;
       gap: 15px;
       
     }
+	  
     .warning-icon {
       font-size: 30px;
       color: red;
     }
+	   
     #warningContent {
       max-width: 90%;
     }
-    @keyframes blink {
-      0% { opacity: 1; }
-      50% { opacity: 0.3; }
-      100% { opacity: 1; }
-    }
+    
   </style>
 </head>
 <body>
@@ -53,7 +79,8 @@
     <thead>
       <tr>
         
-        <th>ФИО пациента</th>
+        <th>ФИО Пациента</th>
+			
         <th>Комментарий</th>
 		<th>Врач</th>
         <th>№ операционного</th>
@@ -88,16 +115,27 @@
       snapshot.forEach(doc => {
         const d = doc.data();
         if (!d.visible) return;
+											
+	const baseText = d.status === 'done'
+          ? 'Операция закончилась • '
+          : 'Идёт операция • ';
+
+        // Повторяем строку 4 раза для бесконечного эффекта
+        const repeated = baseText.repeat(4);										
+									 
         const tr = document.createElement("tr");
         tr.innerHTML = `
           
           <td>${d.lastName}</td>
+			   
           <td>${d.comment || ""}</td>
 		  <td>${d.classNumber}</td>
           <td>${d.firstName}</td>
-          <td><span class="status-text ${d.status === 'done' ? 'done' : 'active'}">${
-            d.status === 'done' ? 'Операция закончилась' : 'Идёт операция'
-          }</span></td>
+          <td>
+		  <div class="marquee-container">
+              <div class="status-track ${d.status === 'done' ? 'done' : 'active'}">${repeated}</div>
+            </div>
+			</td>
         `;
         table.appendChild(tr);
       });
