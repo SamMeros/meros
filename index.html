@@ -93,25 +93,7 @@
     <div class="warning-icon">⚠️</div>
     <div id="warningContent"></div>
   </div>
-<script type="module">
-    import { /* … */ deleteDoc, doc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
-    // … ваша инициализация
 
-    onSnapshot(collection(db, "students"), (snapshot) => {
-      tableBody.innerHTML = "";
-      snapshot.forEach(docSnap => {
-        const tr = document.createElement("tr");
-        // … заполнение tr.innerHTML
-        const deleteBtn = tr.querySelector(".delete");
-        deleteBtn.onclick = async () => {
-          if (confirm("Вы уверены, что хотите удалить этого пациента?")) {
-            await deleteDoc(doc(db, "students", docSnap.id));
-          }
-        };
-        tableBody.appendChild(tr);
-      });
-    });
-  </script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
     import { getFirestore, collection, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
