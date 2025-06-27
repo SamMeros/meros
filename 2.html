@@ -75,7 +75,26 @@
       <tbody id="entriesTable"></tbody>
     </table>
   </div>
+<script type="module">
+    import { /* … */ deleteDoc, updateDoc, doc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+    // … ваша инициализация
 
+    onSnapshot(collection(db, "students"), snapshot => {
+      entriesTable.innerHTML = "";
+      snapshot.forEach(docSnap => {
+        const tr = document.createElement("tr");
+        // … заполнение tr.innerHTML
+        // Обработчик удаления
+        tr.querySelector(".delete").onclick = async () => {
+          if (confirm("Подтвердите удаление этой записи")) {
+            await deleteDoc(doc(db, "students", docSnap.id));
+          }
+        };
+        // Обработчик сохранения (без изменений)
+        entriesTable.appendChild(tr);
+      });
+    });
+  </script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
     import {
