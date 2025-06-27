@@ -83,17 +83,30 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
     import { getFirestore, collection, addDoc, onSnapshot, updateDoc, deleteDoc, doc, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 
-       // === ПАРОЛЬ ===
-    const PASSWORD = "Ghbdtn";  // <-- поменяйте на свой
-    document.getElementById("loginBtn").onclick = () => {
-      const val = document.getElementById("loginPassword").value;
-      if (val === PASSWORD) {
+      // === ПАРОЛЬ ===
+    const PASSWORD = "Ghbdtn";  // <-- замените на свой
+    const loginBtn = document.getElementById("loginBtn");
+    const loginPassword = document.getElementById("loginPassword");
+
+    function doLogin() {
+      if (loginPassword.value === PASSWORD) {
         document.getElementById("loginOverlay").style.display = "none";
         document.getElementById("mainContent").style.display = "block";
       } else {
         alert("Неверный пароль");
       }
-    };
+    }
+
+    // Клик по кнопке
+    loginBtn.addEventListener("click", doLogin);
+    // Нажатие Enter в поле пароля
+    loginPassword.addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        doLogin();
+      }
+    });
+
 
     // === Инициализация Quill ===
     const quill = new Quill('#editor-container', {
