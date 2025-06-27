@@ -3,7 +3,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Форма добавления ученика</title>
+  <title>Форма добавления пациента</title>
   <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
   <style>
     body { font-family: sans-serif; margin: 20px; }
@@ -17,7 +17,7 @@
   </style>
 </head>
 <body>
-  <h2>Добавить ученика</h2>
+  <h2>Добавить пациента</h2>
   <form id="studentForm">
     <label>№ Опер.блока: <input type="text" id="firstName" required /></label>
     <label>ФИО Пациента: <input type="text" id="lastName" required /></label>
@@ -56,7 +56,7 @@
       projectId: "oper-timers",
     });
     const db = getFirestore(app);
-
+// Инициализируем Quill
     const quill = new Quill('#editor-container', {
       theme: 'snow',
       modules: {
@@ -73,7 +73,7 @@
     const form = document.getElementById("studentForm");
     const tableBody = document.getElementById("studentsTable");
     const warningForm = document.getElementById("warningForm");
-
+ // Добавление
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const firstName = document.getElementById("firstName").value.trim();
@@ -93,7 +93,7 @@
     });
 
     
-
+// Отображение списка
     onSnapshot(collection(db, "students"), (snapshot) => {
       tableBody.innerHTML = "";
       snapshot.forEach(docSnap => {
@@ -120,7 +120,7 @@
         `;
         const inputs = tr.querySelectorAll("input");
         const select = tr.querySelector("select");
-
+ // Сохранение изменений
         tr.querySelector(".save").onclick = async () => {
           await updateDoc(doc(db, "students", docSnap.id), {
             firstName: inputs[0].value,
@@ -131,9 +131,10 @@
             status: select.value
           });
         };
-
-        tr.querySelector(".delete").onclick = async () => {
-          await deleteDoc(doc(db, "students", docSnap.id));
+ // Подтверждение и удаление
+         tr.querySelector(".delete").onclick = async () => {
+          if (!confirm("Вы уверены, что хотите удалить этого ученика?")) return;
+          await deleteDoc(doc(db, "students", docSnap.id)); 
         };
 
         tableBody.appendChild(tr);
