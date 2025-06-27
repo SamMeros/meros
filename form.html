@@ -26,6 +26,8 @@
     <label>Статус:
       <label><input type="radio" name="status" value="active" checked /> Идёт операция</label>
       <label><input type="radio" name="status" value="done" /> Операция закончилась</label>
+      <label><input type="radio" name="status" value="preparation" /> Идёт подготовка</label>
+      <label><input type="radio" name="status" value="planned" /> Планируется операция</label>
     </label>
     <label><input type="checkbox" id="visibleOnDisplay" checked /> Отображать в display</label>
     <button type="submit">Добавить</button>
@@ -39,7 +41,6 @@
     <tbody id="studentsTable"></tbody>
   </table>
   <hr>
-  
   
 
   
@@ -108,6 +109,8 @@
             <select>
               <option value="active" ${d.status === "active" ? "selected" : ""}>Идёт операция</option>
               <option value="done" ${d.status === "done" ? "selected" : ""}>Операция закончилась</option>
+              <option value="preparation" ${d.status === "preparation" ? "selected" : ""}>Идёт подготовка</option>
+              <option value="planned" ${d.status === "planned" ? "selected" : ""}>Планируется операция</option>
             </select>
           </td>
           <td>
