@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Form2 — Сокращённая форма</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 10px;
+      padding: 0;
+    }
+    h2 {
+      font-size: 1.4em;
+      margin-bottom: 8px;
+    }
+    form, .table-wrapper {
+      width: 100%;
+      box-sizing: border-box;
+    }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.9em;
+    }
+    input[type="text"], select, button {
+      width: 100%;
+      padding: 8px;
+      font-size: 1em;
+      margin-bottom: 12px;
+      box-sizing: border-box;
+    }
+    button {
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+    button:active { opacity: .8; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9em;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 6px;
+      text-align: center;
+    }
+    th {
+      background: #f0f0f0;
+    }
+    .actions button {
+      width: 48%;
+      padding: 4px;
+      font-size: 0.8em;
+      margin: 2px 1%;
+    }
+    @media (max-width: 480px) {
+      .actions button { width: 100%; margin: 4px 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Добавить пациента</h2>
+  <form id="shortForm">
+    <label for="fullName">ФИО пациента</label>
+    <input type="text" id="fullName" placeholder="Иванов Иван" required />
+
+    <label for="status">Статус</label>
+    <select id="status">
+      <option value="active">Идёт операция</option>
+      <option value="done">Операция закончилась</option>
+      <option value="preparation">Идёт подготовка</option>
+      <option value="planned">Планируется операция</option>
+    </select>
+
+    <button type="submit">Добавить</button>
+  </form>
+
+  <h2>Список</h2>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>ФИО</th>
+          <th>Статус</th>
+          <th>Действия</th>
+        </tr>
+      </thead>
+      <tbody id="entriesTable"></tbody>
+    </table>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      onSnapshot,
+      updateDoc,
+      deleteDoc,
+      doc,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+
+    // Инициализация Firebase
+    const app = initializeApp({
+      apiKey: "AIzaSyCF5BOseh3j9qi3SGAJVciuI-ZJIv6l14o",
+      authDomain: "oper-timers.firebaseapp.com",
+      projectId: "oper-timers"
+    });
+    const db = getFirestore(app);
+
+    const form = document.getElementById("shortForm");
+    const tableBody = document.getElementById("entriesTable");
+
+    form.addEventListener("submit", async e => {
+      e.preventDefault();
+      const full = document.getElementById("fullName").value.trim();
+      const status = document.getElementById("status").value;
+      if (!full) return;
+
+      // Разбиваем ФИО на имя/фамилию (если есть пробел)
+      const parts = full.split(" ");
+      const firstName = parts.shift();
+      const lastName = parts.join(" ");
+
+      await addDoc(collection(db, "students"), {
+        firstName,
+        lastName,
+        classNumber: "",    // поле не нужно
+        comment: "",        // поле не нужно
+        visible: true,
+        status,
+        duration: 0,
+        startTime: serverTimestamp()
+      });
+
+      form.reset();
+    });
+
+    onSnapshot(collection(db, "students"), snapshot => {
+      tableBody.innerHTML = "";
+      snapshot.forEach(docSnap => {
+        const d = docSnap.data();
+        // отображаем только видимые
+        if (!d.visible) return;
+        const full = [d.firstName, d.lastName].filter(Boolean).join(" ");
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td><input type="text" value="${full}" /></td>
+          <td>
+            <select>
+              <option value="active" ${d.status==="active"?"selected":""}>Идёт операц.</option>
+              <option value="done" ${d.status==="done"?"selected":""}>Закончилось</option>
+              <option value="preparation" ${d.status==="preparation"?"selected":""}>Подготовка</option>
+              <option value="planned" ${d.status==="planned"?"selected":""}>Планируется</option>
+            </select>
+          </td>
+          <td class="actions">
+            <button class="save">Сохранить</button>
+            <button class="delete">Удалить</button>
+          </td>
+        `;
+        // Save
+        row.querySelector(".save").onclick = async () => {
+          const newFull = row.querySelector("input").value.trim().split(" ");
+          const fn = newFull.shift();
+          const ln = newFull.join(" ");
+          const newStatus = row.querySelector("select").value;
+          await updateDoc(doc(db, "students", docSnap.id), {
+            firstName: fn,
+            lastName: ln,
+            status: newStatus
+          });
+        };
+        // Delete
+        row.querySelector(".delete").onclick = async () => {
+          await deleteDoc(doc(db, "students", docSnap.id));
+        };
+
+        tableBody.appendChild(row);
+      });
+    });
+  </script>
+</body>
+</html>
