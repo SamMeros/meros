@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>Список оперирующих</title>
+  <title>Отображение учеников</title>
   <style>
     body {
       font-family: sans-serif;
@@ -12,12 +12,8 @@
       background-repeat: no-repeat;
       background-attachment: fixed;
     }
-    .logo {
-      position: absolute;
-      top: 10px;
-      left: 20px;
-      height: 100px;
-    }
+    .logo { position: absolute; top: 10px; left: 20px; height: 100px; }
+
     .datetime {
       position: absolute;
       top: 20px;
@@ -25,20 +21,12 @@
       font-size: 18px;
       font-weight: bold;
       background: rgba(255,255,255,0.8);
-      padding: 5px 10px;
-      border-radius: 5px;
+      padding: 8px 12px;
+      border-radius: 6px;
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 125px;
-    }
-    th, td {
-      border: 1px solid #000;
-      padding: 3px;
-      text-align: center;
-    }
+    table { width: 100%; border-collapse: collapse; margin-top: 125px; }
+    th, td { border: 1px solid #000; padding: 1px; text-align: center; }
 
     .marquee-container {
       width: 250px;
@@ -47,6 +35,7 @@
       height: 30px;
       margin: 0 auto;
     }
+
     .status-track {
       display: inline-block;
       white-space: nowrap;
@@ -56,26 +45,30 @@
     }
 
     .active { color: red; }
-    .done   { color: green; }
-
-    @keyframes scroll-loop {
-      0%   { transform: translateX(0); }
-      100% { transform: translateX(-50%); }
-    }
+    .done { color: green; }
+    .preparation, .planned { color: #b8860b; }
 
     .warning-box {
-      margin-top: 30px;
+      margin-top: 50px;
+      padding-left: 1px;
       display: flex;
       align-items: flex-start;
       justify-content: center;
       gap: 15px;
     }
+
     .warning-icon {
       font-size: 30px;
       color: red;
     }
+
     #warningContent {
       max-width: 90%;
+    }
+
+    @keyframes scroll-loop {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
     }
   </style>
 </head>
@@ -86,7 +79,7 @@
   <table>
     <thead>
       <tr>
-        <th>ФИО Пациента</th>
+       <th>ФИО Пациента</th>
         <th>Комментарий</th>
         <th>Врач</th>
         <th>№ операционного</th>
@@ -103,14 +96,8 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-    import {
-      getFirestore,
-      collection,
-      doc,
-      onSnapshot
-    } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+    import { getFirestore, collection, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 
-    // Инициализация Firebase
     const app = initializeApp({
       apiKey: "AIzaSyCF5BOseh3j9qi3SGAJVciuI-ZJIv6l14o",
       authDomain: "oper-timers.firebaseapp.com",
@@ -118,17 +105,15 @@
     });
     const db = getFirestore(app);
 
-    // Обновление текущей даты и времени
+    const table = document.getElementById("studentTable");
+    const warningBox = document.getElementById("warningTextDisplay");
+    const warningContent = document.getElementById("warningContent");
+
     function updateDateTime() {
       const now = new Date();
       const options = {
-        weekday: 'long',
-        year:    'numeric',
-        month:   'long',
-        day:     'numeric',
-        hour:    '2-digit',
-        minute:  '2-digit',
-        second:  '2-digit'
+        weekday: 'long', year: 'numeric', month: 'long',
+        day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit'
       };
       document.getElementById("datetime").textContent =
         now.toLocaleString('ru-RU', options);
@@ -136,23 +121,29 @@
     setInterval(updateDateTime, 1000);
     updateDateTime();
 
-    const table = document.getElementById("studentTable");
-    const warningBox = document.getElementById("warningTextDisplay");
-    const warningContent = document.getElementById("warningContent");
-
-    // Прослушиваем коллекцию студентов
     onSnapshot(collection(db, "students"), (snapshot) => {
       table.innerHTML = "";
-      snapshot.forEach(docSnap => {
-        const d = docSnap.data();
+      snapshot.forEach(doc => {
+        const d = doc.data();
         if (!d.visible) return;
 
-        // Формируем бегущую строку статуса
-        const baseText = d.status === 'done'
-          ? 'Операция закончилась • '
-          : 'Идёт операция • ';
-        const repeated = baseText.repeat(4);
+        let baseText = '';
+        let statusClass = '';
+        if (d.status === 'done') {
+          baseText = 'Операция закончилась • ';
+          statusClass = 'done';
+        } else if (d.status === 'active') {
+          baseText = 'Идёт операция • ';
+          statusClass = 'active';
+        } else if (d.status === 'preparation') {
+          baseText = 'Идёт подготовка • ';
+          statusClass = 'preparation';
+        } else if (d.status === 'planned') {
+          baseText = 'Планируется операция • ';
+          statusClass = 'planned';
+        }
 
+        const repeated = baseText.repeat(4);
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${d.lastName}</td>
@@ -161,9 +152,7 @@
           <td>${d.firstName}</td>
           <td>
             <div class="marquee-container">
-              <div class="status-track ${d.status === 'done' ? 'done' : 'active'}">
-                ${repeated}
-              </div>
+              <div class="status-track ${statusClass}">${repeated}</div>
             </div>
           </td>
         `;
@@ -171,15 +160,14 @@
       });
     });
 
-    // Прослушиваем настройки предупреждения
     onSnapshot(doc(db, "settings", "warning"), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         if (data.html) {
           warningContent.innerHTML = data.html;
-          warningContent.style.color    = data.color || "#ff0000";
+          warningContent.style.color = data.color || "#ff0000";
           warningContent.style.fontSize = (data.size || 20) + "px";
-          warningBox.style.display      = "flex";
+          warningBox.style.display = "flex";
         } else {
           warningBox.style.display = "none";
         }
