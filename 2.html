@@ -5,117 +5,52 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Form2 — Список пациентов</title>
   <style>
-    body {
-      font-family: sans-serif;
-      margin: 10px;
-      padding: 0;
-    }
-    h2 {
-      font-size: 1.4em;
-      margin-bottom: 8px;
-    }
-    .table-wrapper {
-      width: 100%;
-      box-sizing: border-box;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.9em;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 6px;
-      text-align: center;
-    }
-    th {
-      background: #e0f7ff;   /* светло-голубой фон */
-    }
+    body { font-family: sans-serif; margin:10px; padding:0; }
+    h2 { font-size:1.4em; margin-bottom:8px; }
+    .table-wrapper { width:100%; box-sizing:border-box; }
+    table { width:100%; border-collapse:collapse; font-size:0.9em; }
+    th, td { border:1px solid #ccc; padding:6px; text-align:center; }
+    th { background:#e0f7ff; }
     input[type="text"], select {
-      width: 100%;
-      padding: 4px;
-      font-size: 0.9em;
-      box-sizing: border-box;
+      width:100%; padding:4px; font-size:0.9em; box-sizing:border-box;
     }
     .actions button {
-      width: 48%;
-      padding: 6px;
-      font-size: 0.9em;
-      margin: 2px 1%;
-      border: none;
-      border-radius: 4px;
-      color: #fff;
+      width:48%; padding:6px; font-size:0.9em; margin:2px 1%;
+      border:none; border-radius:4px; color:#fff;
     }
-    .actions .save {
-      background-color: #28a745; /* зелёный */
-    }
-    .actions .delete {
-      background-color: #dc3545; /* красный */
-    }
-    @media (max-width: 480px) {
-      .actions button {
-        width: 100%;
-        margin: 4px 0;
-      }
+    .actions .save   { background:#28a745; } /* зелёный */
+    .actions .delete { background:#dc3545; } /* красный */
+    @media (max-width:480px) {
+      .actions button { width:100%; margin:4px 0; }
     }
   </style>
 </head>
 <body>
-
   <h2>Список пациентов</h2>
   <div class="table-wrapper">
     <table>
       <thead>
-        <tr>
-          <th>ФИО</th>
-          <th>Статус</th>
-          <th>Действия</th>
-        </tr>
+        <tr><th>ФИО</th><th>Статус</th><th>Действия</th></tr>
       </thead>
       <tbody id="entriesTable"></tbody>
     </table>
   </div>
-<script type="module">
-    import { /* … */ deleteDoc, updateDoc, doc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
-    // … ваша инициализация
 
-    onSnapshot(collection(db, "students"), snapshot => {
-      entriesTable.innerHTML = "";
-      snapshot.forEach(docSnap => {
-        const tr = document.createElement("tr");
-        // … заполнение tr.innerHTML
-        // Обработчик удаления
-        tr.querySelector(".delete").onclick = async () => {
-          if (confirm("Подтвердите удаление этой записи")) {
-            await deleteDoc(doc(db, "students", docSnap.id));
-          }
-        };
-        // Обработчик сохранения (без изменений)
-        entriesTable.appendChild(tr);
-      });
-    });
- 
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
     import {
-      getFirestore,
-      collection,
-      onSnapshot,
-      updateDoc,
-      deleteDoc,
-      doc
+      getFirestore, collection, onSnapshot,
+      updateDoc, deleteDoc, doc
     } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 
-    // Инициализация Firebase
     const app = initializeApp({
       apiKey: "AIzaSyCF5BOseh3j9qi3SGAJVciuI-ZJIv6l14o",
       authDomain: "oper-timers.firebaseapp.com",
       projectId: "oper-timers"
     });
     const db = getFirestore(app);
-
     const tableBody = document.getElementById("entriesTable");
 
-    // Загружаем и выводим список
     onSnapshot(collection(db, "students"), snapshot => {
       tableBody.innerHTML = "";
       snapshot.forEach(docSnap => {
@@ -138,18 +73,18 @@
             <button class="delete">Удалить</button>
           </td>
         `;
-        // Сохранение изменений
+        // Сохранить
         tr.querySelector(".save").onclick = async () => {
           const parts = tr.querySelector("input").value.trim().split(" ");
-          const fn = parts.shift();
-          const ln = parts.join(" ");
+          const fn = parts.shift(), ln = parts.join(" ");
           const st = tr.querySelector("select").value;
           await updateDoc(doc(db, "students", docSnap.id), {
             firstName: fn, lastName: ln, status: st
           });
         };
-        // Удаление записи
+        // Подтверждение и удалить
         tr.querySelector(".delete").onclick = async () => {
+          if (!confirm("Подтвердите удаление этой записи")) return;
           await deleteDoc(doc(db, "students", docSnap.id));
         };
         tableBody.appendChild(tr);
