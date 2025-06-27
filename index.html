@@ -2,157 +2,142 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <title>Список оперирующих</title>
+  <meta charset="UTF-8">
+  <title>Форма добавления ученика</title>
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
   <style>
-    body {
-      font-family: sans-serif;
-      margin: 20px;
-      background-image: url('background.jpg');
-      background-size: cover;
-      background-repeat: no-repeat;
-      background-attachment: fixed;
-    }
-    .logo { position: absolute; top: 10px; height: 100px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 125px; }
-    th, td { border: 1px solid #000; padding: 3px; text-align: center; }
-
-	.marquee-container {
-      width: 250px;
-      overflow: hidden;
-      position: relative;
-      height: 30px;
-      margin: 0 auto;
-    }
-
-    .status-track {
-      display: inline-block;
-      white-space: nowrap;
-      font-size: 20px;
-      font-weight: bold;
-      animation: scroll-loop 12s linear infinite;
-    }					
-
-						   
-    .status-text {
-
-							
-      font-size: 20px;
-      font-weight: bold;
-      animation: blink 1s infinite;
-    }
-				  
-    .active { color: red; }
-    .done { color: green; }
-
-	@keyframes scroll-loop {
-      0% { transform: translateX(0); }
-      100% { transform: translateX(-50%); }
-    }				
-	 
-
-    .warning-box {
-      margin-top: 30px;
-				 
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
-      gap: 15px;
-      
-    }
-	  
-    .warning-icon {
-      font-size: 30px;
-      color: red;
-    }
-	   
-    #warningContent {
-      max-width: 90%;
-    }
-    
+    body { font-family: sans-serif; margin: 20px; }
+    label { display: block; margin-top: 10px; }
+    input, button, select { margin-top: 5px; }
+    table { margin-top: 20px; border-collapse: collapse; width: 100%; }
+    td, th { border: 1px solid #ccc; padding: 5px; text-align: center; }
+    #editor-container { height: 150px; background: white; }
+    .saved { color: green; font-size: 14px; margin-left: 10px; }
+    input[type=number] { width: 50px; }
   </style>
 </head>
 <body>
-  <img src="logo.png" alt="Logo" class="logo" />
-
-  <table>
+  <h2>Добавить ученика</h2>
+  <form id="studentForm">
+    <label>№ Опер.блока: <input type="text" id="firstName" required /></label>
+    <label>ФИО Пациента: <input type="text" id="lastName" required /></label>
+    <label>Врач: <input type="text" id="classNumber" required /></label>
+    <label>Комментарий: <input type="text" id="comment" /></label>
+    <label>Статус:
+      <label><input type="radio" name="status" value="active" checked /> Идёт операция</label>
+      <label><input type="radio" name="status" value="done" /> Операция закончилась</label>
+      <label><input type="radio" name="status" value="preparation" /> Идёт подготовка</label>
+      <label><input type="radio" name="status" value="planned" /> Планируется операция</label>
+    </label>
+    <label><input type="checkbox" id="visibleOnDisplay" checked /> Отображать в display</label>
+    <button type="submit">Добавить</button>
+  </form>
+<table>
     <thead>
       <tr>
-        
-        <th>ФИО Пациента</th>
-			
-        <th>Комментарий</th>
-		<th>Врач</th>
-        <th>№ операционного</th>
-        <th>Статус</th>
+        <th>№ опер.блока</th><th>ФИО пациента</th><th>Врач</th><th>Комментарий</th><th>Показывать</th><th>Статус</th><th>Действия</th>
       </tr>
     </thead>
-    <tbody id="studentTable"></tbody>
+    <tbody id="studentsTable"></tbody>
   </table>
+  <hr>
+  
 
-  <div id="warningTextDisplay" class="warning-box" style="display:none;">
-    <div class="warning-icon">⚠️</div>
-    <div id="warningContent"></div>
-  </div>
+  
 
+  <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-    import { getFirestore, collection, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, onSnapshot, updateDoc, deleteDoc, doc, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 
     const app = initializeApp({
       apiKey: "AIzaSyCF5BOseh3j9qi3SGAJVciuI-ZJIv6l14o",
       authDomain: "oper-timers.firebaseapp.com",
-      projectId: "oper-timers"
+      projectId: "oper-timers",
     });
     const db = getFirestore(app);
 
-    const table = document.getElementById("studentTable");
-    const warningBox = document.getElementById("warningTextDisplay");
-    const warningContent = document.getElementById("warningContent");
-
-    onSnapshot(collection(db, "students"), (snapshot) => {
-      table.innerHTML = "";
-      snapshot.forEach(doc => {
-        const d = doc.data();
-        if (!d.visible) return;
-											
-	const baseText = d.status === 'done'
-          ? 'Операция закончилась • '
-          : 'Идёт операция • ';
-
-        // Повторяем строку 4 раза для бесконечного эффекта
-        const repeated = baseText.repeat(4);										
-									 
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          
-          <td>${d.lastName}</td>
-			   
-          <td>${d.comment || ""}</td>
-		  <td>${d.classNumber}</td>
-          <td>${d.firstName}</td>
-          <td>
-		  <div class="marquee-container">
-              <div class="status-track ${d.status === 'done' ? 'done' : 'active'}">${repeated}</div>
-            </div>
-			</td>
-        `;
-        table.appendChild(tr);
-      });
+    const quill = new Quill('#editor-container', {
+      theme: 'snow',
+      modules: {
+        toolbar: [
+          ['bold', 'italic', 'underline', 'strike'],
+          [{ 'color': [] }, { 'background': [] }],
+          [{ 'header': 1 }, { 'header': 2 }],
+          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+          ['clean']
+        ]
+      }
     });
 
-    onSnapshot(doc(db, "settings", "warning"), (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        if (data.html) {
-          warningContent.innerHTML = data.html;
-          warningContent.style.color = data.color || "#ff0000";
-          warningContent.style.fontSize = (data.size || 20) + "px";
-          warningBox.style.display = "flex";
-        } else {
-          warningBox.style.display = "none";
-        }
-      }
+    const form = document.getElementById("studentForm");
+    const tableBody = document.getElementById("studentsTable");
+    const warningForm = document.getElementById("warningForm");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const firstName = document.getElementById("firstName").value.trim();
+      const lastName = document.getElementById("lastName").value.trim();
+      const classNumber = document.getElementById("classNumber").value.trim();
+      const comment = document.getElementById("comment").value.trim();
+      const visible = document.getElementById("visibleOnDisplay").checked;
+      const status = form.querySelector('input[name="status"]:checked').value;
+
+      await addDoc(collection(db, "students"), {
+        firstName, lastName, classNumber, comment, visible, status,
+        duration: 0,
+        startTime: serverTimestamp()
+      });
+
+      form.reset();
+    });
+
+    
+
+    onSnapshot(collection(db, "students"), (snapshot) => {
+      tableBody.innerHTML = "";
+      snapshot.forEach(docSnap => {
+        const d = docSnap.data();
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><input value="${d.firstName || ''}"/></td>
+          <td><input value="${d.lastName || ''}"/></td>
+          <td><input value="${d.classNumber || ''}"/></td>
+          <td><input value="${d.comment || ''}"/></td>
+          <td><input type="checkbox" ${d.visible ? "checked" : ""} /></td>
+          <td>
+            <select>
+              <option value="active" ${d.status === "active" ? "selected" : ""}>Идёт операция</option>
+              <option value="done" ${d.status === "done" ? "selected" : ""}>Операция закончилась</option>
+              <option value="preparation" ${d.status === "preparation" ? "selected" : ""}>Идёт подготовка</option>
+              <option value="planned" ${d.status === "planned" ? "selected" : ""}>Планируется операция</option>
+            </select>
+          </td>
+          <td>
+            <button class="save">Сохранить</button>
+            <button class="delete">Удалить</button>
+          </td>
+        `;
+        const inputs = tr.querySelectorAll("input");
+        const select = tr.querySelector("select");
+
+        tr.querySelector(".save").onclick = async () => {
+          await updateDoc(doc(db, "students", docSnap.id), {
+            firstName: inputs[0].value,
+            lastName: inputs[1].value,
+            classNumber: inputs[2].value,
+            comment: inputs[3].value,
+            visible: inputs[4].checked,
+            status: select.value
+          });
+        };
+
+        tr.querySelector(".delete").onclick = async () => {
+          await deleteDoc(doc(db, "students", docSnap.id));
+        };
+
+        tableBody.appendChild(tr);
+      });
     });
   </script>
 </body>
