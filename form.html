@@ -43,7 +43,25 @@
   <hr>
   
 
-  
+  <script type="module">
+    import { /* … */ deleteDoc, doc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+    // … ваша инициализация
+
+    onSnapshot(collection(db, "students"), (snapshot) => {
+      tableBody.innerHTML = "";
+      snapshot.forEach(docSnap => {
+        const tr = document.createElement("tr");
+        // … заполнение tr.innerHTML
+        const deleteBtn = tr.querySelector(".delete");
+        deleteBtn.onclick = async () => {
+          if (confirm("Вы уверены, что хотите удалить этого пациента?")) {
+            await deleteDoc(doc(db, "students", docSnap.id));
+          }
+        };
+        tableBody.appendChild(tr);
+      });
+    });
+  </script>
 
   <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
   <script type="module">
