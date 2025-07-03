@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Form2 — Список пациентов</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 10px;
+      padding: 0;
+    }
+    h2 {
+      font-size: 1.4em;
+      margin-bottom: 8px;
+    }
+    .table-wrapper {
+      width: 100%;
+      box-sizing: border-box;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9em;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 4px;               /* было 6px */
+      text-align: center;
+    }
+    th {
+      background: #e0f7ff;
+      font-size: 0.9em;
+      padding: 4px;
+    }
+    input[type="text"], select {
+      width: 100%;
+      padding: 2px;               /* было 4px */
+      font-size: 0.85em;          /* чуть меньше */
+      box-sizing: border-box;
+    }
+    .actions {
+      display: flex;
+      gap: 4px;
+      justify-content: center;
+    }
+    .actions button {
+      flex: 1;
+      padding: 2px 4px;           /* уменьшили padding */
+      font-size: 0.75em;          /* меньше шрифт */
+      border: none;
+      border-radius: 3px;
+      color: #fff;
+      cursor: pointer;
+      height: auto;
+      margin: 0;
+    }
+    .actions .save {
+      background-color: #28a745;  /* зелёный */
+    }
+    .actions .delete {
+      background-color: #dc3545;  /* красный */
+    }
+    @media (max-width: 480px) {
+      .actions {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Список пациентов</h2>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>ФИО</th>
+          <th>Статус</th>
+          <th>Действия</th>
+        </tr>
+      </thead>
+      <tbody id="entriesTable"></tbody>
+    </table>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      onSnapshot,
+      updateDoc,
+      deleteDoc,
+      doc
+    } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+
+    // Инициализация Firebase
+    const app = initializeApp({
+      apiKey: "AIzaSyCF5BOseh3j9qi3SGAJVciuI-ZJIv6l14o",
+      authDomain: "oper-timers.firebaseapp.com",
+      projectId: "oper-timers"
+    });
+    const db = getFirestore(app);
+
+    const tableBody = document.getElementById("entriesTable");
+
+    // Загружаем и выводим список
+    onSnapshot(collection(db, "students"), snapshot => {
+      tableBody.innerHTML = "";
+      snapshot.forEach(docSnap => {
+        const d = docSnap.data();
+        if (!d.visible) return;
+        const full = [d.firstName, d.lastName].filter(Boolean).join(" ");
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><input type="text" value="${full}" /></td>
+          <td>
+            <select>
+              <option value="active" ${d.status==="active"?"selected":""}>Идёт оп.</option>
+              <option value="done" ${d.status==="done"?"selected":""}>Закончилось</option>
+              <option value="preparation" ${d.status==="preparation"?"selected":""}>Подгот.</option>
+              <option value="planned" ${d.status==="planned"?"selected":""}>Планир.</option>
+            </select>
+          </td>
+          <td class="actions">
+            <button class="save">Сохр.</button>
+            <button class="delete">Удл.</button>
+          </td>
+        `;
+        // Сохраняем
+        tr.querySelector(".save").onclick = async () => {
+          const parts = tr.querySelector("input").value.trim().split(" ");
+          const fn = parts.shift();
+          const ln = parts.join(" ");
+          const st = tr.querySelector("select").value;
+          await updateDoc(doc(db, "students", docSnap.id), {
+            firstName: fn,
+            lastName: ln,
+            status: st
+          });
+        };
+        // Удаляем
+        tr.querySelector(".delete").onclick = async () => {
+          if (!confirm("Удалить запись?")) return;
+          await deleteDoc(doc(db, "students", docSnap.id));
+        };
+        tableBody.appendChild(tr);
+      });
+    });
+  </script>
+</body>
+</html>
