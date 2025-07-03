@@ -25,7 +25,7 @@
     }
     th, td {
       border: 1px solid #ccc;
-      padding: 4px;               /* было 6px */
+      padding: 4px;
       text-align: center;
     }
     th {
@@ -33,10 +33,11 @@
       font-size: 0.9em;
       padding: 4px;
     }
+    .col-block { width: 50px; white-space: nowrap; }
     input[type="text"], select {
       width: 100%;
-      padding: 2px;               /* было 4px */
-      font-size: 0.85em;          /* чуть меньше */
+      padding: 2px;
+      font-size: 0.85em;
       box-sizing: border-box;
     }
     .actions {
@@ -46,21 +47,16 @@
     }
     .actions button {
       flex: 1;
-      padding: 2px 4px;           /* уменьшили padding */
-      font-size: 0.75em;          /* меньше шрифт */
+      padding: 2px 4px;
+      font-size: 0.75em;
       border: none;
       border-radius: 3px;
       color: #fff;
       cursor: pointer;
-      height: auto;
       margin: 0;
     }
-    .actions .save {
-      background-color: #28a745;  /* зелёный */
-    }
-    .actions .delete {
-      background-color: #dc3545;  /* красный */
-    }
+    .actions .save   { background-color: #28a745; }
+    .actions .delete { background-color: #dc3545; }
     @media (max-width: 480px) {
       .actions {
         flex-direction: column;
@@ -75,6 +71,7 @@
     <table>
       <thead>
         <tr>
+          <th class="col-block">№<br>операц.<br>блока</th>
           <th>ФИО</th>
           <th>Статус</th>
           <th>Действия</th>
@@ -105,46 +102,58 @@
 
     const tableBody = document.getElementById("entriesTable");
 
-    // Загружаем и выводим список
     onSnapshot(collection(db, "students"), snapshot => {
       tableBody.innerHTML = "";
       snapshot.forEach(docSnap => {
         const d = docSnap.data();
         if (!d.visible) return;
-        const full = [d.firstName, d.lastName].filter(Boolean).join(" ");
+
+        // Селект для номера блока
+        const blockSel = `<select>
+          <option value="1"${d.firstName==="1"?" selected":""}>1</option>
+          <option value="2"${d.firstName==="2"?" selected":""}>2</option>
+          <option value="3"${d.firstName==="3"?" selected":""}>3</option>
+          <option value="4"${d.firstName==="4"?" selected":""}>4</option>
+          <option value="5"${d.firstName==="5"?" selected":""}>5</option>
+        </select>`;
+
+        // Селект для статуса
+        const statSel = `<select>
+          <option value="active"${d.status==="active"?" selected":""}>Идёт оп.</option>
+          <option value="done"${d.status==="done"?" selected":""}>Закончилось</option>
+          <option value="preparation"${d.status==="preparation"?" selected":""}>Подгот.</option>
+          <option value="planned"${d.status==="planned"?" selected":""}>Планир.</option>
+        </select>`;
+
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td><input type="text" value="${full}" /></td>
-          <td>
-            <select>
-              <option value="active" ${d.status==="active"?"selected":""}>Идёт оп.</option>
-              <option value="done" ${d.status==="done"?"selected":""}>Закончилось</option>
-              <option value="preparation" ${d.status==="preparation"?"selected":""}>Подгот.</option>
-              <option value="planned" ${d.status==="planned"?"selected":""}>Планир.</option>
-            </select>
-          </td>
+          <td>${blockSel}</td>
+          <td><input type="text" value="${d.lastName||""}" /></td>
+          <td>${statSel}</td>
           <td class="actions">
             <button class="save">Сохр.</button>
             <button class="delete">Удл.</button>
           </td>
         `;
-        // Сохраняем
+
+        // Обработчик сохранения
         tr.querySelector(".save").onclick = async () => {
-          const parts = tr.querySelector("input").value.trim().split(" ");
-          const fn = parts.shift();
-          const ln = parts.join(" ");
-          const st = tr.querySelector("select").value;
+          const newBlock = tr.querySelector("td:first-child select").value;
+          const newName  = tr.querySelector("td:nth-child(2) input").value.trim();
+          const newStat  = tr.querySelector("td:nth-child(3) select").value;
           await updateDoc(doc(db, "students", docSnap.id), {
-            firstName: fn,
-            lastName: ln,
-            status: st
+            firstName: newBlock,
+            lastName: newName,
+            status: newStat
           });
         };
-        // Удаляем
+
+        // Обработчик удаления
         tr.querySelector(".delete").onclick = async () => {
           if (!confirm("Удалить запись?")) return;
           await deleteDoc(doc(db, "students", docSnap.id));
         };
+
         tableBody.appendChild(tr);
       });
     });
